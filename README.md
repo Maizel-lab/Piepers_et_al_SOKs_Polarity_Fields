@@ -11,5 +11,5 @@ Please cite the permanent Zenodo record as:
 
 Piepers M and Maizel A. (2025).
 Code documentation for Mechanics and growth coordination define SOSEKI-based polarity fields. Zenodo.
-https://doi.org/10.5281/zenodo.16778815
+https://doi.org/10.5281/zenodo.17598920
 

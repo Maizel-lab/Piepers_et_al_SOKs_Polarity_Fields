@@ -1,0 +1,333 @@
+---
+title: "Analysis of Turgor-induced strain simulations and SOK intensity "
+format: html
+editor: source
+editor_options: 
+  chunk_output_type: console
+---
+
+# Libraries and general settings
+```{r}
+library(tidyverse)
+library(janitor)
+library(paletteer)
+library(ggpubr)
+library(scales)
+library(kableExtra)
+my_palette= c("#88B0D2", "#F9B280", "#E6848B")
+```
+
+
+# Domain-specific strain analyses (Figure 2)
+```{r}
+vasc <- read_csv("Bloc 1 - Figure 2 - Tissue Topology/vascular_cell_data.csv") |> mutate(sample="Provascular")
+ground <- read_csv("Bloc 1 - Figure 2 - Tissue Topology/ground_cell_data.csv")  |> mutate(sample="Ground")
+interface <- read_csv("Bloc 1 - Figure 2 - Tissue Topology/interface_cell_data.csv")  |> mutate(sample="Boundary")
+
+all_data <- rbind(vasc, ground, interface) |>
+  rename(edge_id = "...1") |> 
+  clean_names() |> 
+  mutate(sample = fct_relevel(as.factor(sample), "Provascular", "Boundary", "Ground"),
+         stage = as.factor(stage),
+         stage = fct_recode(stage, "VI" = "st6", "V" = "st5-2", "IV" = "st4-2"),
+         edge_id = as.factor(edge_id))
+
+all_data_filtered <- all_data |>
+  group_by(edge_id) |>
+  # Keep all unique edge_ids, or only Interface ones if duplicated
+  filter(n() == 1 | (n() > 1 & sample == "Boundary")) |>
+  ungroup()
+```
+
+
+## Heterogeneity in Strain distribution
+
+### Figure 2h
+
+```{r}
+meta_data <- all_data_filtered |> 
+  group_by(sample) |> 
+  summarize(n=n())
+
+
+Fig_Strain <- all_data_filtered |> 
+  ggplot(aes(y=strain_percent, x=sample)) + 
+  geom_boxplot(aes(fill = sample), alpha =1/3, outliers = FALSE) +
+  geom_jitter(aes(color = sample), width = 0.15, size =4, alpha =2/3)+
+  scale_fill_manual(values = my_palette)+
+  scale_color_manual(values = my_palette)+
+  scale_y_continuous(labels = label_percent(scale=1))+
+  stat_compare_means(comparisons = list(c(1,2), c(2,3), c(1,3)),
+                     method = "t.test",
+                     label = "p.values",
+                     tip.length = 0.03,
+                     label.y.npc = 0.5,
+                     size = 3)+
+  geom_text(data = meta_data, aes(label = str_c("n=",n), y= -1))+
+  theme_minimal()+
+  labs(y = "Strain", 
+       x= "")+
+  theme(panel.grid.minor.y = element_blank(),
+        panel.grid.major.x = element_blank(),
+        legend.position = "none")
+Fig_Strain
+
+ggsave("Fig2h", Fig_Strain, width = 8, height = 8)
+```
+
+
+### Figure S7
+
+```{r}
+ meta_data <- all_data_filtered |> 
+  group_by(sample, stage) |> 
+  summarize(n=n())
+
+
+Fig_Supp_Strain <- 
+  all_data_filtered |> 
+  ggplot(aes(y=strain_percent, x=sample)) + 
+  geom_boxplot(aes(fill = sample), alpha =1/3, outlier.shape = NULL) +
+  geom_jitter(aes(color = sample), width = 0.15, size=4, alpha=2/3)+
+  facet_wrap( ~ stage)+
+  theme_minimal()+
+  scale_fill_manual(values = my_palette)+
+  scale_color_manual(values = my_palette)+
+  scale_y_continuous(labels = label_percent(scale=1))+
+  stat_compare_means(comparisons = list(c(1,2), c(2,3), c(1,3)),
+                     method = "t.test",
+                     label = "p.values",
+                     tip.length = 0.03,
+                     label.y.npc = 0.5,
+                     size = 3)+
+  labs(y = "Strain", 
+       x= "Region")+
+  geom_text(data = meta_data, aes(label = str_c("n=",n), y= -1))+
+ theme(panel.grid.minor.y = element_blank(),
+        panel.grid.major.x = element_blank(),
+        legend.position = "none")
+Fig_Supp_Strain
+ggsave("FigS7c.pdf", Fig_Supp_Strain, width = 12, height = 8)
+```
+
+## Correlation with SOK signal 
+
+### Figure 2j
+```{r}
+facet_stats <- all_data_filtered |>
+  group_by(sample) |>
+  reframe({
+    df <- drop_na(cur_data(), strain_percent, sok2_yfp_intensity)
+    ct <- cor.test(df$strain_percent, df$sok2_yfp_intensity, method = "pearson")
+    r  <- unname(ct$estimate)
+    p  <- ct$p.value
+    n  <- nrow(df)
+    p_lab <- ifelse(p < 0.001, "< 0.001", paste0("= ", format(round(p, 3), nsmall = 3)))
+    tibble(label = paste0("r = ", round(r, 2), ", p ", p_lab, ", n = ", n))
+  })
+
+Fig_Strain_SOK <- 
+  all_data_filtered |> 
+  ggplot(aes(x=strain_percent, y=sok2_yfp_intensity)) + 
+  geom_smooth(aes(color = sample), method = "lm", se=T, color="grey60", alpha=1/5) +
+  geom_point(aes(color = sample), size=4, alpha=2/3) + 
+  facet_wrap(sample ~ .)+
+  theme_minimal()+
+  scale_color_manual(values = my_palette)+
+  geom_text(
+    data = facet_stats,
+    aes(x = -Inf, y = Inf, label = label),
+    hjust = -0.1, vjust = 3.6, size = 3.5, inherit.aes = FALSE
+  )+
+  scale_x_continuous(labels = label_percent(scale=1))+
+  labs(x = "Strain", 
+       y= "SOK2 Cortical Signal (a.u.)")+
+  theme(legend.position = "none")
+Fig_Strain_SOK
+
+ggsave("Fig2j.pdf", Fig_Strain_SOK, width = 8, height = 8)
+```
+
+### Figure S7
+```{r}
+facet_stats <- all_data_filtered |>
+  group_by(sample, stage) |>
+  reframe({
+    df <- drop_na(cur_data(), strain_percent, sok2_yfp_intensity)
+    ct <- cor.test(df$strain_percent, df$sok2_yfp_intensity, method = "pearson")
+    r  <- unname(ct$estimate)
+    p  <- ct$p.value
+    n  <- nrow(df)
+    p_lab <- ifelse(p < 0.001, "< 0.001", paste0("= ", format(round(p, 3), nsmall = 3)))
+    tibble(label = paste0("r = ", round(r, 2), ", p ", p_lab, ", n = ", n))
+  })
+
+Fig_Supp_Strain_SOK <- 
+  all_data_filtered |> 
+  ggplot(aes(x=strain_percent, y=sok2_yfp_intensity)) + 
+  geom_smooth(aes(color = sample), method = "lm", se=T, color="grey60", alpha=1/5) +
+  geom_point(aes(color = sample), size=4, alpha=2/3) + 
+  facet_grid(stage ~ sample)+
+  theme_minimal()+
+  scale_color_manual(values = my_palette)+
+  geom_text(
+    data = facet_stats,
+    aes(x = -Inf, y = Inf, label = label),
+    hjust = -0.1, vjust = 3.6, size = 3.5, inherit.aes = FALSE
+  )+
+  scale_x_continuous(labels = label_percent(scale=1))+
+  labs(x = "Strain", 
+       y= "SOK2 Cortical Signal (a.u.)")+
+  theme(legend.position = "none")
+Fig_Supp_Strain_SOK
+
+ggsave("FigS7d", Fig_Supp_Strain_SOK, width = 12, height = 12)
+```
+
+
+# Ablation simulations and wall-type analysis (Fig. 3)
+
+```{r}
+data_bloc2 <- read_csv("Bloc 2 - Figure 3 - Ablations/full_dataset_always_free.csv") |> 
+  clean_names() |> 
+  mutate(experiment = case_when(experiment == "Wild Type" ~ "Control",
+                                experiment == "Ablation" ~ "Ablated"),
+         experiment = factor(experiment),
+         orientation = factor(orientation))
+```
+
+## Visualise the anticlinal & periclinal walls mapping
+```{r}
+ggplot(data_bloc2, aes(x = origin_x, y = origin_y, color = orientation)) + 
+  geom_segment(aes(xend = destination_x, yend = destination_y))+
+  scale_color_paletteer_d("colorblindr::OkabeIto")+
+  facet_grid(experiment ~stage)+
+  theme_minimal()
+```
+
+## Strain distribution in ablated vs non-ablated walls (Fig. 3d)
+
+```{r}
+meta_data <- 
+  data_bloc2 |>
+  group_by(experiment, orientation) |> 
+  summarize(n=n())
+```
+
+Test for differences in variances using the Levene Test:
+```{r}
+library(car)
+
+pairs_experiment <- combn(levels(data_bloc2$experiment), 2)
+
+res_list <- lapply(levels(data_bloc2$orientation), function(g1) {
+  sub1 <- subset(data_bloc2, orientation == g1)
+
+  pvals <- apply(pairs_experiment, 2, function(p) {
+    sub <- sub1[sub1$experiment %in% p, ]
+    leveneTest(strain ~ experiment, data = sub)[1, "Pr(>F)"]
+  })
+
+  data.frame(
+    orientation   = g1,
+    contrast = apply(pairs_experiment, 2, paste, collapse = " vs "),
+    experiment = "",
+    p_adj    = p.adjust(pvals, method = "BH")
+  )
+})
+
+levene_tests_results <- do.call(rbind, res_list)
+levene_tests_results
+
+levene_annot <- 
+  levene_tests_results |>
+  mutate(
+    # y-position of the variance annotation (slightly above the boxes)
+    y = 1.05 * tapply(data_bloc2$strain, data_bloc2$orientation, max)[orientation],
+    
+    # you can use symbols instead of the raw p if you prefer
+    var_label = case_when(
+      p_adj < 0.001 ~ "***",
+      p_adj < 0.01  ~ "**",
+      p_adj < 0.05  ~ "*",
+      TRUE          ~ "n.s."
+    )
+    
+    # or, if you want the exact p:
+    # var_label = str_c("Var p=", format(signif(p_adj, 2), scientific = TRUE))
+  )
+```
+
+```{r}
+Fig_Strain_Ablation_Ant_Per <- 
+  data_bloc2 |> 
+  ggplot(aes(x=fct_rev(experiment), y=strain, fill = fct_rev(experiment)))+
+  geom_boxplot(alpha=1/3, outliers = FALSE)+
+  geom_jitter(width=0.1, size =3, shape=21)+
+  facet_wrap(.~orientation)+
+  scale_fill_manual(values = my_palette)+
+  scale_y_continuous(labels = label_percent(scale=100))+
+  stat_compare_means(comparisons = list(c(1,2)),
+                     method = "t.test",
+                     label = "p.values",
+                     tip.length = 0.03,
+                     label.y.npc = 0.5,
+                     size = 3)+
+  geom_text(data = meta_data, aes(label = str_c("n=",n), y= -0.015))+
+  geom_segment(
+    data = levene_annot,
+    aes(x = 1, xend = 2, y = y, yend = y),
+    inherit.aes = FALSE
+  ) +
+  geom_text(
+    data = levene_annot,
+    aes(x = 1.5, y = y, label = var_label),
+    vjust = -0.3,
+    inherit.aes = FALSE
+  ) +
+  theme_minimal()+
+  labs(x="Condition", 
+       y="Strain")+
+  theme(legend.position = "NA")
+
+ggsave("Fig3d.pdf", Fig_Strain_Ablation_Ant_Per, width = 12, height = 12)
+```
+
+
+## Correlation with SOK5 signal (Fig. 3e)
+
+```{r}
+facet_stats <- data_bloc2 |>
+  filter(orientation == "periclinal") |> 
+  group_by(experiment, orientation) |>
+  reframe({
+    df <- drop_na(cur_data(), strain, sok5)
+    ct <- cor.test(df$strain, df$sok5, method = "pearson")
+    r  <- unname(ct$estimate)
+    p  <- ct$p.value
+    n  <- nrow(df)
+    p_lab <- ifelse(p < 0.001, "< 0.001", paste0("= ", format(round(p, 3), nsmall = 3)))
+    tibble(label = paste0("r = ", round(r, 2), ", p ", p_lab, ", n = ", n))
+  })
+
+
+Fig_Corr_SOK_ablation <- 
+  data_bloc2 |> 
+  filter(orientation == "periclinal") |> 
+  ggplot(aes(x=strain, y=sok5, fill = fct_rev(experiment)))+
+  geom_point(size =3, shape=21)+
+  geom_smooth(method='lm', color="black")+
+  facet_grid(.~fct_rev(experiment))+
+  geom_text(
+    data = facet_stats,
+    aes(x = -Inf, y = Inf, label = label),
+    hjust = -0.1, vjust = 3.6, size = 3.5, inherit.aes = FALSE
+  )+
+  scale_fill_manual(values = my_palette)+
+  scale_x_continuous(labels = label_percent(scale=100))+
+  theme_minimal()+
+  labs(x="Strain", 
+       y="SOK5 (a.u.)")+
+  theme(legend.position = "NA")
+ggsave("Fig3e.pdf", Fig_Corr_SOK_ablation, width = 12, height = 12)
+```

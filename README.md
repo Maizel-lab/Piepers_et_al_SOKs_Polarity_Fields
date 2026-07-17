@@ -1,8 +1,8 @@
 # About
 
-This is a repository for code and source data for the paper *"Mechanics and growth coordination define SOSEKI-based polarity fields"*. 
+This is a repository for code and source data for the paper *"SOSEKI proteins report growth-coordinated polarity during plant organogenesis"*. 
 
- bioRxiv URL
+ https://www.biorxiv.org/content/10.1101/2025.11.26.690761v2
 
 Contributed by the [Maizel lab](https://www.cos.uni-heidelberg.de/en/research-groups/cell-and-developmental-biology "https://www.cos.uni-heidelberg.de/en/research-groups/cell-and-developmental-biology").
 

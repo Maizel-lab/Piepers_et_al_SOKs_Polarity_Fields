@@ -1,0 +1,264 @@
+---
+title: "Analysis of Turgor-induced strain simulations and SOK intensity "
+format: html
+editor: source
+editor_options: 
+  chunk_output_type: console
+---
+
+# Libraries and general settings
+```{r}
+library(tidyverse)
+library(janitor)
+library(paletteer)
+library(ggpubr)
+library(scales)
+library(kableExtra)
+library(emmeans)
+library(multcomp)
+library(multcompView)
+library(ggpmisc)
+
+library(conflicted)
+conflicts_prefer(dplyr::select, dplyr::filter, dplyr::rename)
+
+my_palette= c("#c6c5c5", "#5fba46","#a0a0a0" )
+my_palette_2 = c("#762a86", "#0481bf")
+```
+
+
+# Domain-specific strain analyses (Figure 2)
+
+```{r}
+simu_st5 <- read_csv("Figure 2 - Strain distribution in LRP/strain_st5.csv") |> 
+  mutate(zone = fct_relevel(zone, "provascular", "boundary", "ground"))
+
+meta_data <- simu_st5 |> 
+  group_by(zone) |> 
+  summarize(n=n())
+
+Fig_Strain <- simu_st5 |> 
+  ggplot(aes(y=strain*100, x=zone)) + 
+  geom_boxplot(aes(fill = zone), alpha =1/3, outliers = FALSE) +
+  geom_jitter(aes(color = zone), width = 0.15, size =4, alpha =2/3)+
+  scale_fill_manual(values = my_palette)+
+  scale_color_manual(values = my_palette)+
+  scale_y_continuous(labels = label_percent(scale=1))+
+  stat_compare_means(comparisons = list(c(1,2), c(2,3), c(1,3)),
+                     method = "t.test",
+                     label = "p.values",
+                     tip.length = 0.03,
+                     label.y.npc = 0.5,
+                     size = 3)+
+  geom_text(data = meta_data, aes(label = str_c("n=",n), y= 1))+
+  theme_minimal()+
+  labs(y = "Strain", 
+       x= "")+
+  theme(panel.grid.minor.y = element_blank(),
+        panel.grid.major.x = element_blank(),
+        legend.position = "none")
+Fig_Strain
+
+ggsave("Fig2x.pdf", Fig_Strain, width = 8, height = 8)
+```
+
+
+# Strain and SOK5 signal in control and ablated conditions
+
+## Load data
+
+```{r}
+data_ablation <- read_csv("Figure 3 - Emergence & ablations/merged.csv") |> 
+  rename(edge_id = "...1") |> 
+  clean_names() |> 
+  mutate(stage = as.factor(stage),
+         stage = fct_recode(stage, "III" = "3", "IV" = "4", "V" = "5"),
+         experiment = fct_relevel(experiment, "Control"),
+         edge_id = as.factor(edge_id))
+```
+
+## Metadata & stats 
+```{r}
+# Fit model with interaction for Strain
+model_strain <- lm(strain ~ stage * experiment, data = data_ablation)
+emm_strain <- emmeans(model_strain, ~ stage * experiment)
+
+# Pairwise comparisons within each stage, Tukey-adjusted
+pairs_result_strain <- pairs(emm_strain)
+
+# Compact letter display
+cld_result_strain <- multcomp::cld(emm_strain, Letters = letters, adjust = "tukey")
+cld_df_strain <- as.data.frame(cld_result_strain)
+```
+
+```{r}
+# Create metadata table for annotation
+meta_data <- data_ablation |> 
+  group_by(stage, experiment) |> 
+  summarize(n=n(),
+            max = max(strain),
+            min= min(strain)) |> 
+  left_join(cld_df_strain, by = c("stage", "experiment")) |> 
+  rename(group = .group) |> 
+  mutate(group = str_trim(group))
+```
+
+## Plotting
+
+### Strain distribution for Stage 5 only (Fig 3)
+```{r}
+Fig_strain_st5 <- 
+  data_ablation |> 
+  filter(stage =="V") |> 
+  ggplot(aes(y=strain, x=experiment)) + 
+  geom_boxplot(aes(fill = experiment), alpha =1/3, outliers = FALSE) +
+  geom_jitter(aes(color = experiment), position = position_jitterdodge(jitter.width = 0.25, dodge.width = 0.75), size =4, alpha =2/3)+
+  scale_fill_manual(values = my_palette_2)+
+  scale_color_manual(values = my_palette_2)+
+  stat_compare_means(comparisons = list(c(1,2)),
+                     method = "t.test",
+                     label = "p.values",
+                     tip.length = 0.03,
+                     label.y.npc = 0.5,
+                     size = 3)+
+  geom_text(data = meta_data |> filter(stage =="V"), aes(label = str_c("n=",n), y=0.01, group = experiment))+
+  theme_minimal()+ 
+  labs(y = "Strain", 
+       x= "")+
+  theme(panel.grid.minor.y = element_blank(),
+        panel.grid.major.x = element_blank(),
+        legend.position = "none")
+Fig_strain_st5
+
+ggsave("Fig_strain_st5.pdf", Fig_strain_st5, width = 4, height = 8)
+```
+
+### SOK5 distribution for Stage 5 only  (Fig 3)
+```{r}
+Fig_sok5_st5 <- 
+  data_ablation |> 
+  filter(stage =="V") |> 
+  ggplot(aes(y=normalized_sok5, x=experiment)) + 
+  geom_boxplot(aes(fill = experiment), alpha =1/3, outliers = FALSE) +
+  geom_jitter(aes(color = experiment), position = position_jitterdodge(jitter.width = 0.25, dodge.width = 0.75), size =4, alpha =2/3)+
+  scale_fill_manual(values = my_palette_2)+
+  scale_color_manual(values = my_palette_2)+
+  stat_compare_means(comparisons = list(c(1,2)),
+                     method = "t.test",
+                     label = "p.values",
+                     tip.length = 0.03,
+                     label.y.npc = 0.5,
+                     size = 3)+
+  geom_text(data = meta_data |> filter(stage =="V"), aes(label = str_c("n=",n), y=-0.05, group = experiment))+
+  theme_minimal()+ 
+  labs(y = "SOK5", 
+       x= "")+
+  theme(panel.grid.minor.y = element_blank(),
+        panel.grid.major.x = element_blank(),
+        legend.position = "none")
+Fig_sok5_st5
+
+ggsave("Fig_sok5_st5.pdf", Fig_sok5_st5, width = 4, height = 8)
+```
+
+
+### Strain - SOK5 correlation per wall - stage 5 only (Fig S11)
+```{r}
+meta_data <- meta_data |> 
+  mutate(y_offset = 0.18 + (as.numeric(fct_rev(experiment)) + 1) * 0.008)
+
+Fig_strain_sok5_st5 <- 
+  data_ablation |> 
+  filter(stage =="V") |> 
+  ggplot(aes(y=strain, x=normalized_sok5)) + 
+  geom_point(aes(color = experiment), alpha =2/3, size=3) +
+  geom_smooth(aes(color = experiment, group = experiment), method = "lm", se = FALSE) +
+  stat_poly_eq(aes(color = experiment, group = experiment,
+                    label = after_stat(paste(rr.label, p.value.label, sep = "~~~"))),
+               formula = y ~ x, parse = TRUE, size = 3) +
+  scale_fill_manual(values = my_palette_2)+
+  scale_color_manual(values = my_palette_2)+
+  geom_text(data = meta_data |> filter(stage=="V") , aes(label = str_c(experiment,": n=",n), y=y_offset, x=0.1, color = experiment, group = experiment))+
+  theme_minimal()+ 
+  labs(y = "Strain", 
+       x= "SOK5")+
+  theme(panel.grid.minor.y = element_blank(),
+        panel.grid.major.x = element_blank(),
+        legend.position = "none")
+Fig_strain_sok5_st5
+
+ggsave("Fig_strain_sok5_st5.pdf", Fig_strain_sok5_st5, width = 8, height = 8)
+```
+
+
+# Strain in tissues in control vs ablated simulations (Figure S11)
+
+## Load data (Stage 5 only)
+```{r}
+temp <- read_csv("Figure 3 - Emergence & ablations/st5_AB_data_set_corrected.csv") |> 
+  rename(edge_id = "...1") |> 
+  clean_names() |> 
+  mutate(experiment = "Ablation",
+         stage = "V",
+         edge_id = as.factor(edge_id)) |> 
+  select(edge_id, strain, normalized_strain, strain, zone, stage, experiment)
+
+# Control conditions
+temp2 <- read_csv("Figure 3 - Strain distribution in LRP/strain_st5.csv") |> 
+  clean_names() |> 
+  mutate(experiment = "Control", 
+         stage = "V",
+         edge_id = as.factor(edge_id)) |> 
+  select(edge_id, strain, normalized_strain, strain, zone, stage, experiment)
+
+data_strain_zones <- temp |> 
+  rbind(temp2) |> 
+  mutate(zone = fct_relevel(zone, "provascular", "boundary", "ground"),
+         experiment = fct_relevel(experiment, "Control", "Ablation"))
+```
+
+## Metadata & stats 
+
+```{r}
+# Create metadata table for annotation
+meta_data <- data_strain_zones |> 
+  group_by(zone, experiment) |> 
+  summarize(n=n(),
+            max = max(strain),
+            min= min(strain)) |> 
+  left_join(cld_df_strain, by = c("zone", "experiment")) |> 
+  rename(group = .group) |> 
+  mutate(group = str_trim(group))
+```
+
+## Plotting 
+
+### Strain distribution provs vs ground for Stage 5 only
+```{r}
+Fig_strain_st5_zones_byzone <- 
+  data_strain_zones |> 
+  ggplot(aes(y = strain, x = zone, color = zone)) + 
+  geom_boxplot(aes(fill = zone), alpha = 1/3, outliers = FALSE) +
+  geom_jitter(aes(color = zone), width = 0.2, size = 4, alpha = 2/3) +
+  scale_fill_manual(values = my_palette) +
+  scale_color_manual(values = my_palette) +
+  facet_wrap(~ experiment) +
+  stat_compare_means(comparisons = list(c(1, 2), c(2, 3), c(1, 3)),
+                      method = "t.test",
+                      label = "p.signif",
+                      tip.length = 0.03,
+                      label.y.npc = 0.5,
+                      size = 3) +
+  geom_text(data = meta_data, aes(label = str_c("n=",n), y= 0), color = "black")+
+  theme_minimal() + 
+  labs(y = "Strain", x = "") +
+  theme(panel.grid.minor.y = element_blank(),
+        panel.grid.major.x = element_blank(),
+        legend.position = "none")
+Fig_strain_st5_zones_byzone
+
+ggsave("Fig_strain_st5_zones_byzone.pdf", Fig_strain_st5_zones_byzone, width = 8, height = 8)
+```
+
+
+

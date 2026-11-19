@@ -1,0 +1,47 @@
+######## New MorphoGraphX session v2.0 r1-246: 2024-12-19 13:58:41
+Process.Mesh__System__Save('E:/MGX/SOK2/workfiles/T0T4/mesh_t0_corrected-corrected-corrected-final.mgxm', 'No', '0')
+Process.Mesh__System__Save('E:/MGX/SOK2/workfiles/T4T8/mesh_t8-corrected_final.mgxm', 'No', '1')
+Process.Mesh__System__Load('E:/MGX/SOK2/workfiles/T0T8/mesh_t0_corrected-corrected-corrected-final.mgxm', 'no', 'no', '0')
+######## New MorphoGraphX session v2.0 r1-246: 2024-12-19 14:19:53
+Process.Mesh__System__Load('E:/MGX/SOK2/workfiles/T8T16/mesh_t8-corrected_final.mgxm', 'no', 'no', '0')
+Process.Mesh__System__Load('E:/MGX/SOK2/workfiles/T8T16/mesh_t16_final.mgxm', 'no', 'no', '1')
+Process.Mesh__Cell_Axis__PDG__Display_Growth_Directions('Aniso=StretchMax/StretchMin', 'Manual', '1.09', '1.7', 'Both', 'white', 'red', '4', '3', '0.1', '0.0', 'No', '1.0')
+Process.Mesh__Cell_Axis__PDG__Display_Growth_Directions('Aniso=StretchMax/StretchMin', 'Manual', '1.09', '1.7', 'Both', 'white', 'red', '4', '3', '0.1', '0.0', 'No', '1.0')
+Process.Mesh__Cell_Axis__PDG__Check_Correspondence('No', 'No', 'No')
+Process.Mesh__Cell_Axis__PDG__Compute_Growth_Directions()
+Process.Mesh__Cell_Axis__PDG__Display_Growth_Directions('Aniso=StretchMax/StretchMin', 'Manual', '1.09', '1.7', 'Both', 'white', 'red', '4', '3', '0.1', '0.0', 'No', '1.0')
+Process.Mesh__Cell_Axis__PDG__Display_Growth_Directions('Aniso=StretchMax/StretchMin', 'Manual', '1.09', '1.7', 'Both', 'white', 'red', '4', '3', '0.1', '0.0', 'No', '1.0')
+Process.Mesh__Cell_Axis__PDG__Display_Growth_Directions('Aniso=StretchMax/StretchMin', 'Manual', '1.09', '1.7', 'Both', 'white', 'red', '4', '3', '0.1', '0.0', 'No', '1.0')
+Process.Mesh__System__Load('E:/MGX/SOK2/workfiles/T0T8/mesh_t0_corrected-corrected-corrected-final.mgxm', 'no', 'no', '0')
+Process.Mesh__System__Load('E:/MGX/SOK2/workfiles/T0T8/mesh_t8-corrected_final.mgxm', 'no', 'no', '1')
+Process.Mesh__Cell_Axis__PDG__Check_Correspondence('No', 'No', 'No')
+Process.Mesh__Cell_Axis__PDG__Compute_Growth_Directions()
+Process.Mesh__Cell_Axis__PDG__Display_Growth_Directions('Aniso=StretchMax/StretchMin', 'Manual', '1.09', '1.7', 'Both', 'white', 'red', '4', '3', '0.1', '0.0', 'No', '1.0')
+Process.Mesh__Cell_Axis__PDG__Check_Correspondence('No', 'No', 'No')
+Process.Mesh__Cell_Axis__PDG__Check_Correspondence('No', 'No', 'No')
+Process.Mesh__Cell_Axis__PDG__Check_Correspondence('Yes', 'No', 'No')
+Process.Mesh__Cell_Axis__PDG__Check_Correspondence('No', 'No', 'No')
+Process.Mesh__Cell_Axis__PDG__Compute_Growth_Directions()
+Process.Mesh__Cell_Axis__PDG__Display_Growth_Directions('Aniso=StretchMax/StretchMin', 'Manual', '1.09', '1.7', 'Both', 'white', 'red', '4', '3', '0.1', '0.0', 'No', '1.0')
+Process.Mesh__Cell_Axis__PDG__Display_Growth_Directions('Aniso=StretchMax/StretchMin', 'Manual', '1.09', '1.7', 'Both', 'white', 'red', '4', '3', '0.1', '0.0', 'No', '1.0')
+######## New MorphoGraphX session v2.0 r1-246: 2025-01-24 18:33:42
+
+Process.Mesh__System__Load('', 'no', 'no', '1')
+Process.Mesh__Cell_Axis__PDG__Check_Correspondence('No', 'No', 'No')
+Process.Mesh__Cell_Axis__PDG__Compute_Growth_Directions()
+Process.Mesh__Cell_Axis__PDG__Display_Growth_Directions('Aniso=StretchMax/StretchMin', 'Auto', '1', '3', 'Both', 'white', 'red', '2.0', '2.0', '0.1', '0.0', 'No', '1.0')
+Process.Mesh__Cell_Axis__PDG__Display_Growth_Directions('Aniso=StretchMax/StretchMin', 'Auto', '1', '3', 'Both', 'white', 'red', '2.0', '2.0', '0.1', '0.0', 'No', '1.0')
+Process.Mesh__Cell_Axis__PDG__Display_Growth_Directions('Aniso=StretchMax/StretchMin', 'Auto', '1', '3', 'Both', 'white', 'red', '2.0', '2.0', '0.1', '0.0', 'No', '1.0')
+Process.Mesh__System__Load('E:/MGX/SOK2/workfiles/T0T8/mesh_t8-corrected_final.mgxm', 'no', 'no', '1')
+######## New MorphoGraphX session v2.0 r1-246: 2025-01-24 18:43:10
+Process.Mesh__System__Load('E:/MGX/SOK2/workfiles/T8T16/mesh_t8-corrected_final.mgxm', 'no', 'no', '0')
+Process.Mesh__System__Load('E:/MGX/SOK2/workfiles/T8T16/mesh_t16_final.mgxm', 'no', 'no', '1')
+######## New MorphoGraphX session v2.0 r1-246: 2025-01-24 18:55:32
+Process.Mesh__System__Load('E:/MGX/SOK2/workfiles/T8T16/mesh_t16_final.mgxm', 'no', 'no', '1')
+Process.Mesh__Cell_Axis__Cell_Axis_Save('', 'Original Tensor')
+######## New MorphoGraphX session v2.0 r1-246: 2025-04-04 17:45:04
+Process.Mesh__System__Load('E:/MGX/SOK2/workfiles/T8T16/mesh_t16_final.mgxm', 'no', 'no', '0')
+Process.Stack__System__Open('E:/MGX/Signal_per_cell/SOK2/t8 to t24/t16.tif', 'Work', '0', '/label')
+######## New MorphoGraphX session v2.0 r1-246: 2025-04-05 16:18:59
+Process.Mesh__System__Load('E:/MGX/SOK2/workfiles/T8T16/mesh_t16_final.mgxm', 'no', 'no', '1')
+Process.Mesh__Cell_Axis__PDG__Display_Growth_Directions('Aniso=StretchMax/StretchMin', 'Manual', '1.09', '1.7', 'StretchMax-StretchMin', 'white', 'red', '4', '4', '0.1', '0.0', 'No', '1.0')

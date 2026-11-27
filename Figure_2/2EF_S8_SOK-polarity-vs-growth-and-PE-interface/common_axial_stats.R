@@ -103,3 +103,17 @@ mardia_circ_lin <- function(theta_deg, y) {
   p <- pf(fstat, 2, n - 3, lower.tail = FALSE)
   list(n = n, r2 = r2, p = p)
 }
+
+#' Permutation p for the Mardia circular-linear R^2 (orientation axis vs linear variable):
+#' the linear variable is shuffled across cells (n_perm times), keeping both marginal
+#' distributions; p = (#{R^2_null >= R^2_obs} + 1) / (n_perm + 1).
+mardia_circ_lin_perm <- function(theta_deg, y, n_perm = 10000, seed = 0) {
+  ok <- complete.cases(theta_deg, y)
+  theta_deg <- theta_deg[ok]; y <- y[ok]
+  obs <- mardia_circ_lin(theta_deg, y)
+  set.seed(seed)
+  null_r2 <- replicate(n_perm, mardia_circ_lin(theta_deg, sample(y))$r2)
+  obs$p_F <- obs$p
+  obs$p <- (sum(null_r2 >= obs$r2) + 1) / (n_perm + 1)
+  obs
+}

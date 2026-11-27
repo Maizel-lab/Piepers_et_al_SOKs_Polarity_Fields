@@ -1,0 +1,8 @@
+group,letters_mixed_model,letters_cell_tukey,n_cells,n_roots
+S2_G,a,ab,46,13
+S2_V,a,a,49,13
+S6_G,ab,c,20,3
+S6_V,bc,d,30,3
+S6_RA,a,b,14,3
+MR_G,c,e,46,1
+MR_V,c,e,21,1

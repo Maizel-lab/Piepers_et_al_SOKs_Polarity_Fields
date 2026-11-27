@@ -1,0 +1,2 @@
+comparison,n_cells_col0,n_cells_plt,n_images_col0,n_images_plt,n_roots_col0,n_roots_plt,median_col0,median_plt,fold_change_plt_vs_col0_mixed,mixed_p,root_permutation_p,root_permutation_n_relabellings,cell_level_MWU_p
+"MT anisotropy, Col-0 vs plt3/5/7",46,51,8,10,8,8,0.15095,0.0141,0.11535834891714083,3.547557183094281e-48,0.0001554001554001554,12870,1.6499714193335906e-15

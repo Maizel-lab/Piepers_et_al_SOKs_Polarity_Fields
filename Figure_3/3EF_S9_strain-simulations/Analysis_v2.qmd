@@ -22,12 +22,17 @@ library(ggpmisc)
 library(conflicted)
 conflicts_prefer(dplyr::select, dplyr::filter, dplyr::rename)
 
+# The wall-level comparisons below come from one segmented template per condition, so the
+# walls are not independent biological replicates. p-values are therefore not drawn on the
+# figures (Fig. 3F, S9B are descriptive). Set to TRUE to show the wall-level t-tests.
+SHOW_WALL_LEVEL_P <- FALSE
+
 my_palette= c("#c6c5c5", "#5fba46","#a0a0a0" )
 my_palette_2 = c("#762a86", "#0481bf")
 ```
 
 
-# Domain-specific strain analyses (Figure 2)
+# Domain-specific strain analyses (Figure S9B)
 
 ```{r}
 simu_st5 <- read_csv("strain_st5.csv") |> 
@@ -44,12 +49,12 @@ Fig_Strain <- simu_st5 |>
   scale_fill_manual(values = my_palette)+
   scale_color_manual(values = my_palette)+
   scale_y_continuous(labels = label_percent(scale=1))+
-  stat_compare_means(comparisons = list(c(1,2), c(2,3), c(1,3)),
+  (if (SHOW_WALL_LEVEL_P) stat_compare_means(comparisons = list(c(1,2), c(2,3), c(1,3)),
                      method = "t.test",
                      label = "p.values",
                      tip.length = 0.03,
                      label.y.npc = 0.5,
-                     size = 3)+
+                     size = 3) else NULL) +
   geom_text(data = meta_data, aes(label = str_c("n=",n), y= 1))+
   theme_minimal()+
   labs(y = "Strain", 
@@ -105,7 +110,7 @@ meta_data <- data_ablation |>
 
 ## Plotting
 
-### Strain distribution for Stage 5 only (Fig 3)
+### Strain distribution for Stage 5 only (Fig 3F, left)
 ```{r}
 Fig_strain_st5 <- 
   data_ablation |> 
@@ -115,12 +120,12 @@ Fig_strain_st5 <-
   geom_jitter(aes(color = experiment), position = position_jitterdodge(jitter.width = 0.25, dodge.width = 0.75), size =4, alpha =2/3)+
   scale_fill_manual(values = my_palette_2)+
   scale_color_manual(values = my_palette_2)+
-  stat_compare_means(comparisons = list(c(1,2)),
+  (if (SHOW_WALL_LEVEL_P) stat_compare_means(comparisons = list(c(1,2)),
                      method = "t.test",
                      label = "p.values",
                      tip.length = 0.03,
                      label.y.npc = 0.5,
-                     size = 3)+
+                     size = 3) else NULL) +
   geom_text(data = meta_data |> filter(stage =="V"), aes(label = str_c("n=",n), y=0.01, group = experiment))+
   theme_minimal()+ 
   labs(y = "Strain", 
@@ -133,7 +138,7 @@ Fig_strain_st5
 ggsave("Fig_strain_st5.pdf", Fig_strain_st5, width = 4, height = 8)
 ```
 
-### SOK5 distribution for Stage 5 only  (Fig 3)
+### SOK5 distribution for Stage 5 only  (Fig 3F, right)
 ```{r}
 Fig_sok5_st5 <- 
   data_ablation |> 
@@ -143,12 +148,12 @@ Fig_sok5_st5 <-
   geom_jitter(aes(color = experiment), position = position_jitterdodge(jitter.width = 0.25, dodge.width = 0.75), size =4, alpha =2/3)+
   scale_fill_manual(values = my_palette_2)+
   scale_color_manual(values = my_palette_2)+
-  stat_compare_means(comparisons = list(c(1,2)),
+  (if (SHOW_WALL_LEVEL_P) stat_compare_means(comparisons = list(c(1,2)),
                      method = "t.test",
                      label = "p.values",
                      tip.length = 0.03,
                      label.y.npc = 0.5,
-                     size = 3)+
+                     size = 3) else NULL) +
   geom_text(data = meta_data |> filter(stage =="V"), aes(label = str_c("n=",n), y=-0.05, group = experiment))+
   theme_minimal()+ 
   labs(y = "SOK5", 
@@ -162,7 +167,7 @@ ggsave("Fig_sok5_st5.pdf", Fig_sok5_st5, width = 4, height = 8)
 ```
 
 
-### Strain - SOK5 correlation per wall - stage 5 only (Fig S11)
+### Strain - SOK5 correlation per wall - stage 5 only (not in current figures)
 ```{r}
 meta_data <- meta_data |> 
   mutate(y_offset = 0.18 + (as.numeric(fct_rev(experiment)) + 1) * 0.008)
@@ -174,7 +179,7 @@ Fig_strain_sok5_st5 <-
   geom_point(aes(color = experiment), alpha =2/3, size=3) +
   geom_smooth(aes(color = experiment, group = experiment), method = "lm", se = FALSE) +
   stat_poly_eq(aes(color = experiment, group = experiment,
-                    label = after_stat(paste(rr.label, p.value.label, sep = "~~~"))),
+                    label = after_stat(if (SHOW_WALL_LEVEL_P) paste(rr.label, p.value.label, sep = "~~~") else rr.label)),
                formula = y ~ x, parse = TRUE, size = 3) +
   scale_fill_manual(values = my_palette_2)+
   scale_color_manual(values = my_palette_2)+
@@ -191,7 +196,7 @@ ggsave("Fig_strain_sok5_st5.pdf", Fig_strain_sok5_st5, width = 8, height = 8)
 ```
 
 
-# Strain in tissues in control vs ablated simulations (Figure S11)
+# Strain in tissues in control vs ablated simulations (not in current figures)
 
 ## Load data (Stage 5 only)
 ```{r}
@@ -243,12 +248,12 @@ Fig_strain_st5_zones_byzone <-
   scale_fill_manual(values = my_palette) +
   scale_color_manual(values = my_palette) +
   facet_wrap(~ experiment) +
-  stat_compare_means(comparisons = list(c(1, 2), c(2, 3), c(1, 3)),
+  (if (SHOW_WALL_LEVEL_P) stat_compare_means(comparisons = list(c(1, 2), c(2, 3), c(1, 3)),
                       method = "t.test",
                       label = "p.signif",
                       tip.length = 0.03,
                       label.y.npc = 0.5,
-                      size = 3) +
+                      size = 3) else NULL) +
   geom_text(data = meta_data, aes(label = str_c("n=",n), y= 0), color = "black")+
   theme_minimal() + 
   labs(y = "Strain", x = "") +

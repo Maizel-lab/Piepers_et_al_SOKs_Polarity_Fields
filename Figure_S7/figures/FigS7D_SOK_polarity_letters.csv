@@ -1,0 +1,22 @@
+SOK,group,letters_mixed_model,letters_cell_tukey,n_cells,n_roots
+SOK1,II - IV-G,ab,ab,16,6
+SOK1,II - IV-V,ab,ab,14,6
+SOK1,IV - Emerged-G,bc,c,32,6
+SOK1,IV - Emerged-V,ab,a,13,4
+SOK1,IV - Emerged-A,c,d,19,6
+SOK1,Mature roots-G,a,b,51,3
+SOK1,Mature roots-V,c,e,30,4
+SOK2,II - IV-G,a,a,32,8
+SOK2,II - IV-V,bc,b,39,8
+SOK2,IV - Emerged-G,cde,c,16,3
+SOK2,IV - Emerged-V,de,d,24,3
+SOK2,IV - Emerged-A,ab,a,8,3
+SOK2,Mature roots-G,e,c,70,4
+SOK2,Mature roots-V,d,e,49,4
+SOK5,II - IV-G,ab,a,24,7
+SOK5,II - IV-V,ab,a,28,7
+SOK5,IV - Emerged-G,b,a,33,6
+SOK5,IV - Emerged-V,bc,b,28,5
+SOK5,IV - Emerged-A,a,c,24,6
+SOK5,Mature roots-G,c,d,72,4
+SOK5,Mature roots-V,ab,e,63,4

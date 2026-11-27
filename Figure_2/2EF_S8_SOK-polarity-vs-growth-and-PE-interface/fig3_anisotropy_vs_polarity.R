@@ -14,9 +14,10 @@
 ## reverse-engineered despite trying several plausible variants; every
 ## other panel (t_y orientation, both abundance panels, and the aniso
 ## formula itself) matched exactly. This script therefore uses the
-## project's own standard circular-linear test (Mardia 1976, on the
-## axially-doubled angle, F-test) throughout, which may give a modestly
-## different t_x number for SOK2 -- flagged on the figure.
+## project's own standard circular-linear statistic (Mardia 1976, R^2 on the
+## axially-doubled angle), with significance from a permutation test
+## (10,000 shuffles of log anisotropy across cells), as stated in the Methods.
+## The parametric F-test p is printed alongside for reference.
 ##
 ## Requires: ggplot2
 ## Usage: Rscript fig3_anisotropy_vs_polarity.R pdg_vs_signal_sok2.csv SOK2 FALSE
@@ -43,8 +44,9 @@ sub <- df[!(df$tissue_x %in% "Exclude from analyses") & !is.na(df$log_aniso), ]
 n <- nrow(sub)
 
 ## panel 1 + 2: circular-linear (orientation)
-m1 <- mardia_circ_lin(sub$sok_x_angle_deg, sub$log_aniso)
-m2 <- mardia_circ_lin(sub$sok_y_angle_deg, sub$log_aniso)
+N_PERM <- 10000
+m1 <- mardia_circ_lin_perm(sub$sok_x_angle_deg, sub$log_aniso, n_perm = N_PERM, seed = 0)
+m2 <- mardia_circ_lin_perm(sub$sok_y_angle_deg, sub$log_aniso, n_perm = N_PERM, seed = 1)
 
 ## panel 3 + 4: Pearson (abundance, both variables log-transformed)
 s3 <- sub[complete.cases(sub$log_signalTotal_x, sub$log_aniso), c("log_signalTotal_x", "log_aniso")]
@@ -53,14 +55,13 @@ s4 <- sub[complete.cases(sub$log_signalTotal_y, sub$log_aniso), c("log_signalTot
 sp4 <- cor.test(s4$log_signalTotal_y, s4$log_aniso, method = "pearson")
 
 cat(sprintf("=== %s anisotropy vs polarity ===\n", sel_name))
-cat(sprintf("  t_x orientation: n=%d r2=%.3f p=%.4f\n", m1$n, m1$r2, m1$p))
-cat(sprintf("  t_y orientation: n=%d r2=%.3f p=%.4f\n", m2$n, m2$r2, m2$p))
+cat(sprintf("  t_x orientation: n=%d r2=%.3f p_perm=%.4f (F-test p=%.4f)\n", m1$n, m1$r2, m1$p, m1$p_F))
+cat(sprintf("  t_y orientation: n=%d r2=%.3f p_perm=%.4f (F-test p=%.4f)\n", m2$n, m2$r2, m2$p, m2$p_F))
 cat(sprintf("  t_x abundance:   n=%d r=%+.3f p=%.4f\n", nrow(s3), unname(sp3$estimate), sp3$p.value))
 cat(sprintf("  t_y abundance:   n=%d r=%+.3f p=%.4f\n", nrow(s4), unname(sp4$estimate), sp4$p.value))
 
-title1 <- sprintf("n=%d, r²=%.2f, p=%.3f", m1$n, m1$r2, m1$p)
-if (!no_caveat) title1 <- paste0(title1, "\n(see note: methodology re-derived, see caption)")
-title2 <- sprintf("n=%d, r²=%.2f, p=%.3f", m2$n, m2$r2, m2$p)
+title1 <- sprintf("n=%d, r²=%.2f, p=%.4f%s", m1$n, m1$r2, m1$p, ifelse(m1$p < 0.05, "*", ""))
+title2 <- sprintf("n=%d, r²=%.2f, p=%.4f%s", m2$n, m2$r2, m2$p, ifelse(m2$p < 0.05, "*", ""))
 title3 <- sprintf("n=%d, r=%+.2f, p=%.4f%s", nrow(s3), unname(sp3$estimate), sp3$p.value,
                    ifelse(sp3$p.value < 0.05, "*", ""))
 title4 <- sprintf("n=%d, r=%+.2f, p=%.4f%s", nrow(s4), unname(sp4$estimate), sp4$p.value,
@@ -81,12 +82,7 @@ p4 <- mkplot(s4$log_signalTotal_y, s4$log_aniso, "log(SOK signalTotal, t_y)", ti
 
 suptitle <- sprintf("%s: growth anisotropy vs SOK polarity angle / abundance ('Exclude from analyses' tissue excluded)",
                      sel_name)
-note <- "Orientation panels (1-2): Mardia circular-linear correlation on the axially-doubled SOK angle, parametric F-test. Abundance panels (3-4): Pearson correlation of log signal vs log anisotropy."
-if (!no_caveat) {
-  note <- paste0(note, " NOTE: panel 1's exact r2/p could not be reverse-engineered from the original, ",
-                 "now-missing analysis script (historical figure reported r2=0.01, p=0.484 for this panel); ",
-                 "this uses the project's standard circular-linear test instead -- see memo.")
-}
+note <- "Orientation panels (1-2): Mardia circular-linear R2 on the axially-doubled SOK angle, permutation test (10,000 shuffles). Abundance panels (3-4): Pearson correlation of log signal vs log anisotropy. Single tracked primordium."
 
 out_path <- sprintf("fig3_anisotropy_vs_polarity_%s_R.pdf", tolower(sel_name))
 if (requireNamespace("gridExtra", quietly = TRUE) && requireNamespace("grid", quietly = TRUE)) {

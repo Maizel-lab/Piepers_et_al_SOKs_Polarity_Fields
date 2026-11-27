@@ -9,15 +9,21 @@ Tissue assignment
 Angle: atan2(yMax, xMax) folded onto 0-90 deg (shortest distance to the
 horizontal 0/180 deg line), as in the earlier "polarity csv corrected" scripts.
 
-Statistics: two-sided Mann-Whitney U per tissue, control vs mutant; Holm
-correction within each comparison (2 tests) and, additionally, across all 10.
-A sensitivity analysis repeats the test on per-sample (per-CSV) medians.
+Statistics (reported in the figure): linear mixed model with a random intercept per
+root (biological replicate), angle ~ condition x tissue; the condition effect is tested
+within each tissue and Holm-corrected for the two tissues. Roots are assigned from the
+image file names (stats_common/rootid.py), so primordia from the same root count once.
+An exact permutation test that shuffles condition labels between roots (root medians)
+is given as a check. The earlier cell-level two-sided Mann-Whitney U tests (and the
+per-file medians) are kept in the statistics table as sensitivity columns.
 """
 
 import hashlib
 import math
 import random
 from pathlib import Path
+
+import sys
 
 import matplotlib.pyplot as plt
 from matplotlib.transforms import offset_copy
@@ -26,6 +32,8 @@ from scipy.stats import mannwhitneyu
 
 
 DATA_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(DATA_DIR.parents[1] / "stats_common"))
+from mixed import contrast, exact_root_permutation, fit_mixed, root_id  # noqa: E402
 OUTPUT_DIR = DATA_DIR / "boxplots"
 TISSUES = ("Provascular", "Ground tissue precursor")
 CELL_TO_TISSUE = {
@@ -147,10 +155,16 @@ def main() -> None:
             df.insert(2, "condition", folder)
             all_cells.append(df)
     cells = pd.concat(all_cells, ignore_index=True)
+    # Root = condition + sample position: mock and DEX images share S1, S2, ... numbering
+    # within one microscope file but come from different seedlings.
+    cells["root"] = cells["condition"] + "|" + cells["sample"].map(root_id)
     cells.to_csv(OUTPUT_DIR / "acute_angles_per_cell.csv", index=False)
 
     for title, *_ in COMPARISONS:
         sub = cells[cells.comparison == title]
+        model_df = sub.assign(mutant=(sub.role == "mutant").astype(int),
+                              tissue_g=(sub.tissue == "Ground tissue precursor").astype(int))
+        model = fit_mixed(model_df, "acute_angle_deg ~ mutant * tissue_g")
         for tissue in TISSUES:
             t = sub[sub.tissue == tissue]
             ctrl = t[t.role == "control"]
@@ -159,6 +173,11 @@ def main() -> None:
             ctrl_s = ctrl.groupby("sample").acute_angle_deg.median()
             mut_s = mut.groupby("sample").acute_angle_deg.median()
             u_s, p_s = mwu(ctrl_s, mut_s)
+            weights = {"mutant": 1.0} if tissue == "Provascular" else {"mutant": 1.0, "mutant:tissue_g": 1.0}
+            mm_diff, mm_se, mm_p = contrast(model, weights)
+            ctrl_r = ctrl.groupby("root").acute_angle_deg.median()
+            mut_r = mut.groupby("root").acute_angle_deg.median()
+            perm_p, n_relabel = exact_root_permutation(ctrl_r, mut_r)
             stats_rows.append(
                 {
                     "comparison": title,
@@ -167,13 +186,20 @@ def main() -> None:
                     "mutant": mut.condition.iloc[0] if len(mut) else "",
                     "control_n_cells": len(ctrl),
                     "control_n_samples": ctrl["sample"].nunique(),
+                    "control_n_roots": ctrl["root"].nunique(),
                     "control_median_deg": ctrl.acute_angle_deg.median(),
                     "control_IQR_deg": ctrl.acute_angle_deg.quantile(0.75) - ctrl.acute_angle_deg.quantile(0.25),
                     "mutant_n_cells": len(mut),
                     "mutant_n_samples": mut["sample"].nunique(),
+                    "mutant_n_roots": mut["root"].nunique(),
                     "mutant_median_deg": mut.acute_angle_deg.median(),
                     "mutant_IQR_deg": mut.acute_angle_deg.quantile(0.75) - mut.acute_angle_deg.quantile(0.25),
-                    "test": "Mann-Whitney U, two-sided (cells)",
+                    "test": "linear mixed model, random intercept per root",
+                    "mixed_diff_deg": mm_diff,
+                    "mixed_se_deg": mm_se,
+                    "mixed_p": mm_p,
+                    "root_permutation_p": perm_p,
+                    "root_permutation_n_relabellings": n_relabel,
                     "U": u,
                     "p": p,
                     "per_sample_U": u_s,
@@ -181,6 +207,13 @@ def main() -> None:
                 }
             )
     stats = pd.DataFrame(stats_rows)
+    stats["mixed_p_Holm_within_comparison"] = (
+        stats.groupby("comparison", sort=False)["mixed_p"].transform(lambda s: holm(list(s)))
+    )
+    stats["root_permutation_p_Holm_within_comparison"] = (
+        stats.groupby("comparison", sort=False)["root_permutation_p"].transform(lambda s: holm(list(s)))
+    )
+    # sensitivity: cell-level Mann-Whitney U (the earlier analysis) and per-file medians
     stats["p_Holm_within_comparison"] = (
         stats.groupby("comparison", sort=False)["p"].transform(lambda s: holm(list(s)))
     )
@@ -188,13 +221,16 @@ def main() -> None:
     stats["per_sample_p_Holm_within_comparison"] = (
         stats.groupby("comparison", sort=False)["per_sample_p"].transform(lambda s: holm(list(s)))
     )
-    stats["significance"] = stats.p_Holm_within_comparison.map(stars)
+    stats["significance"] = stats.mixed_p_Holm_within_comparison.map(stars)
+    stats = stats.rename(columns={"U": "cell_level_U", "p": "cell_level_p",
+                                  "p_Holm_within_comparison": "cell_level_p_Holm_within_comparison",
+                                  "p_Holm_all_10": "cell_level_p_Holm_all"})
     stats.to_csv(OUTPUT_DIR / "acute_angle_statistics.csv", index=False)
     with pd.option_context("display.width", 250, "display.max_columns", 30):
-        print(stats[["comparison", "tissue", "control_n_cells", "control_median_deg",
-                     "mutant_n_cells", "mutant_median_deg", "U", "p",
-                     "p_Holm_within_comparison", "p_Holm_all_10", "per_sample_p",
-                     "significance"]].round(4).to_string(index=False))
+        print(stats[["comparison", "tissue", "control_n_cells", "control_n_roots",
+                     "mutant_n_cells", "mutant_n_roots", "mixed_diff_deg",
+                     "mixed_p_Holm_within_comparison", "root_permutation_p_Holm_within_comparison",
+                     "cell_level_p_Holm_within_comparison", "significance"]].round(4).to_string(index=False))
 
     draw(cells, stats)
 
